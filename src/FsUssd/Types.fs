@@ -117,7 +117,7 @@ module UssdMenu =
 
     let addItem display state =
         let item = display |> UssdMenuItem.create
-        { state with Items = state.Items |> List.append [ item ] }
+        { state with Items = item :: state.Items }
 
     let addZeroItem display state =
         let item = display |> UssdMenuItem.create
