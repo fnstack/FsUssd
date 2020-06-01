@@ -96,6 +96,7 @@ module UssdMenuItem =
 type UssdMenu =
     { Header: string
       Footer: string
+      Separator: string
       Items: UssdMenuItem list
       ZeroItem: UssdMenuItem }
 
@@ -104,12 +105,15 @@ module UssdMenu =
     let Empty =
         { Header = String.Empty
           Footer = String.Empty
+          Separator = ")"
           Items = List.Empty
           ZeroItem = UssdMenuItem.Empty }
 
     let setHeader header state = { state with Header = header }
 
     let setFooter footer state = { state with Footer = footer }
+
+    let setSeparator separator state = { state with Separator = separator }
 
     let addItem display state =
         let item = display |> UssdMenuItem.create
@@ -127,15 +131,15 @@ module UssdMenu =
             |> not)
         then
 
-            builder.AppendLine(state.Header + Environment.NewLine) |> ignore
+            builder.AppendLine(state.Header) |> ignore
 
         state.Items
         |> List.iteri (fun i item ->
-            builder.AppendLine((sprintf "%s) %s" ((i + 1).ToString()) item.Display) + Environment.NewLine) |> ignore)
+            builder.AppendLine((sprintf "%s%s %s" ((i + 1).ToString()) state.Separator item.Display)) |> ignore)
 
         if (state.ZeroItem = UssdMenuItem.Empty |> not) then
 
-            builder.AppendLine(sprintf "0) %s" (state.ZeroItem.Display) + Environment.NewLine) |> ignore
+            builder.AppendLine(sprintf "0%s %s" state.Separator (state.ZeroItem.Display)) |> ignore
 
         if (state.Footer
             |> String.IsNullOrWhiteSpace
