@@ -42,7 +42,7 @@ type UssdMenuBuilder internal () =
 
 let ussdMenu = UssdMenuBuilder()
 
-let private getSession = UssdSession.getSession memoryStore
+let private getSession = UssdSession.getSession sessionStore
 
 let run (menu: UssdMenu) (args: UssdArguments) = async {
     let! session = getSession args.SessionId

@@ -1,6 +1,9 @@
 [<AutoOpen>]
 module FsUssd.UssdSession
 
+open System
+open LazyCache
+
 type UssdArguments = {
     SessionId: string
     ServiceCode: string
@@ -8,27 +11,72 @@ type UssdArguments = {
     Text: string
 }
 
-[<CLIMutable>]
 type UssdSession = {
     SessionId: string
     Values: Map<string, string>
 }
 
-module UssdSession = 
-    let getSession (store: Store) =
+type UssdSessionStore = {
+    SetSession: string * UssdSession -> Async<unit>
+    GetSession: string -> Async<UssdSession option>
+    IsSessionExists: string -> Async<bool>
+    DeleteSession: string -> Async<unit>
+}
+
+module UssdSession =
+    let empty = {
+        SessionId = String.Empty
+        Values = Map.empty
+    }
+
+    let getSession (store: UssdSessionStore) =
         fun sessionId -> async {
-            match! sessionId |> store.GetValue with
+            match! sessionId |> store.GetSession with
             | None ->
-                let session = {UssdSession.SessionId = sessionId; Values = Map.empty.Add("CREATED_AT", System.DateTime.Now.ToString())}
+                let session = empty
 
-                let data = serialize(session)
-
-                do! store.SetValue(sessionId, data)
+                do! store.SetSession(sessionId, session)
 
                 return session
 
             | Some session ->
-                let! session = deserialize(session)
 
                 return session
         }
+
+/// CACHING
+
+let private sessionCache = CachingService()
+
+let private deleteSession sessionId = async { return sessionId |> sessionCache.Remove }
+
+let private setSession (sessionId, session: UssdSession) =
+    async {
+        sessionId |> sessionCache.Remove
+        return sessionCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(60.))
+    }
+
+let private getSession sessionId =
+    async {
+        try
+            match! sessionId |> sessionCache.GetAsync<UssdSession> |> Async.AwaitTask with
+            | session when session = UssdSession.empty -> return Some session
+            | session -> return Some session
+        with
+            | :? NullReferenceException ->
+            return None
+    }
+
+let private isSessionExists key =
+    async {
+        match! key |> getSession with
+        | None -> return false
+        | Some _ -> return true
+    }
+
+let sessionStore : UssdSessionStore = {
+    SetSession = setSession
+    GetSession = getSession
+    IsSessionExists = isSessionExists
+    DeleteSession = deleteSession
+}

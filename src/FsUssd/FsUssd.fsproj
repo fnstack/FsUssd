@@ -9,9 +9,6 @@
     <Compile Include="USSD\UssdForm.fs" />
     <Compile Include="USSD\UssdContext.fs" />
     <Compile Include="USSD\UssdMenu.fs" />
-    <Compile Include="Types.fs" />
-    <Compile Include="Serialization.fs" />
-    <Compile Include="MemoryStore.fs" />
     <Compile Include="UssdSession.fs" />
     <Compile Include="UssdState.fs" />
     <Compile Include="UssdMenu.fs" />
