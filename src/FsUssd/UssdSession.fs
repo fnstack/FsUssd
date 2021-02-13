@@ -8,9 +8,10 @@ type UssdArguments = {
     Text: string
 }
 
+[<CLIMutable>]
 type UssdSession = {
     SessionId: string
-    Values: (string * string) list
+    Values: Map<string, string>
 }
 
 module UssdSession = 
@@ -18,7 +19,7 @@ module UssdSession =
         fun sessionId -> async {
             match! sessionId |> store.GetValue with
             | None ->
-                let session = {UssdSession.SessionId = sessionId; Values = []}
+                let session = {UssdSession.SessionId = sessionId; Values = Map.empty.Add("CREATED_AT", System.DateTime.Now.ToString())}
 
                 let data = serialize(session)
 

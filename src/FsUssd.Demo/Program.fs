@@ -19,13 +19,27 @@ let main argv =
         start_state state
     }
 
-    let args = {
-        UssdArguments.PhoneNumber = "242069753244"
-        ServiceCode = "000"
-        SessionId = "126"
-        Text = ""
-    }
+    let mutable userInput = ""
 
-    let result = (run menu args) |> Async.RunSynchronously
+    while not (userInput = "quit") do
+
+        Console.Write("Ussd Input: ");
+
+        userInput <- Console.ReadLine()
+
+        let args = userInput.Split("&")
+
+        let args = {
+            UssdArguments.PhoneNumber = args.[0]
+            ServiceCode = "000"
+            SessionId = "126"
+            Text = args.[1]
+        }
+
+        let result = (run menu args) |> Async.RunSynchronously
+
+        Console.WriteLine(result);
+
+        ()
 
     0 // return an integer exit code
