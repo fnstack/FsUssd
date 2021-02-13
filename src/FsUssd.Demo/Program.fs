@@ -6,7 +6,8 @@ open FsUssd
 [<EntryPoint>]
 let main argv =
 
-    let startStateRun context = async {
+    let startStateRun (context: UssdContext) = async {
+
             return ()
         }
 

@@ -13,6 +13,7 @@ type UssdArguments = {
 
 type UssdSession = {
     SessionId: string
+    CurrentState: string
     Values: Map<string, string>
 }
 
@@ -26,6 +27,7 @@ type UssdSessionStore = {
 module UssdSession =
     let empty = {
         SessionId = String.Empty
+        CurrentState = String.Empty
         Values = Map.empty
     }
 
