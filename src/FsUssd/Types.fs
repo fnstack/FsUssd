@@ -1,7 +1,4 @@
-[<AutoOpen>]
-module FsUssd.UssdContext
-
-open System
+namespace FsUssd
 
 type Store = {
     SetValue: string * string -> Async<unit>
@@ -10,7 +7,17 @@ type Store = {
     DeleteValue: string -> Async<unit>
 }
 
+type UssdArguments = {
+    SessionId: string
+    ServiceCode: string
+    PhoneNumber: string
+    Text: string
+}
+
+//type UssdSession = {
+    
+//}
+
 type UssdContext = {
-    Store: Store
-    Action: unit -> Async<UssdResponse>
+    Args: UssdArguments
 }

@@ -7,13 +7,14 @@
     <None Remove="C:\Users\rajiv.mounguengue\.nuget\packages\fsharp.core\5.0.1\contentFiles\any\netstandard2.0\FSharp.Core.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="UssdRequest.fs" />
-    <Compile Include="UssdResponse.fs" />
-    <Compile Include="UssdForm.fs" />
-    <Compile Include="UssdContext.fs" />
+    <Compile Include="USSD\UssdRequest.fs" />
+    <Compile Include="USSD\UssdResponse.fs" />
+    <Compile Include="USSD\UssdForm.fs" />
+    <Compile Include="USSD\UssdContext.fs" />
+    <Compile Include="USSD\UssdMenu.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="UssdState.fs" />
     <Compile Include="UssdMenu.fs" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="paket.references" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
