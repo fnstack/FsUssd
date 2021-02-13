@@ -5,6 +5,7 @@ open System
 
 type UssdContext = {
     Args: UssdArguments
+    Session: UssdSession
 }
 
 type UssdState = {

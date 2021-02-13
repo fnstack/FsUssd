@@ -33,13 +33,26 @@ module UssdSession =
         fun sessionId -> async {
             match! sessionId |> store.GetSession with
             | None ->
-                let session = empty
+                let session = { empty with SessionId = sessionId }
 
                 do! store.SetSession(sessionId, session)
 
                 return session
 
             | Some session ->
+
+                return session
+        }
+
+    let setSession (store: UssdSessionStore) =
+        fun (session: UssdSession) -> async {
+            match! session.SessionId |> store.IsSessionExists with
+            | true ->
+                do! store.SetSession(session.SessionId, session)
+
+                return session
+
+            | false ->
 
                 return session
         }
