@@ -9,7 +9,7 @@ type UssdMenuState =
       States: UssdState list}
 
 let private empty = {
-    StartState = Empty
+    StartState = UssdState.empty
     Context = UssdContext.empty
     States = []
 }
@@ -24,7 +24,14 @@ type UssdMenuBuilder internal () =
 
     member _.Yield(_) = empty
 
-    member __.Run(state: UssdMenuState) = state
+    member __.Run(state: UssdMenuState) =
+        //match state with
+        //| state when state.StartState = UssdState.Empty && state.States |> List.isEmpty |> not ->
+        //    {state with StartState = state.States.[0]}
+        //| _ ->
+        //    state
+
+        state
 
     [<CustomOperation("start_state")>]
     member _.SetStartState(menu: UssdMenuState, state: UssdState) =
@@ -41,6 +48,26 @@ let ussdMenu = UssdMenuBuilder()
 let private getSession = UssdSession.getSession sessionStore
 let private setSession = UssdSession.setSession sessionStore
 
+let findState (states: UssdState list) stateName =
+    
+    match states |> List.tryFind (fun state -> state.Name = stateName) with
+    | None ->
+        states.[1]
+    | Some state ->
+        state
+
+let findNextState (states: UssdState list) stateName userText =
+    
+    let state = findState states stateName
+
+    let state = match state.Next.TryFind(userText) with
+                | None ->
+                    state
+                | Some state ->
+                    state
+
+    state
+
 let private runState (context: UssdContext, state: UssdState) : Async<UssdResult> = async {
     let session = context.Session
     
@@ -49,9 +76,9 @@ let private runState (context: UssdContext, state: UssdState) : Async<UssdResult
     let session =
         match result.Type, session with
         | Response, session ->
-            {session with Status = Ongoing}
+            {session with Status = Ongoing; CurrentState = state.Name}
         | Release, session ->
-            {session with Status = Terminated}
+            {session with Status = Terminated; CurrentState = state.Name}
 
     let! _ = setSession(session)
 
@@ -61,24 +88,27 @@ let private runState (context: UssdContext, state: UssdState) : Async<UssdResult
 let run (menu: UssdMenuState) (args: UssdArguments) = async {
     let! session = getSession args.SessionId
 
-    let context : UssdContext =
+    let context, state : UssdContext * UssdState =
         match session.Status with
         | Initiated ->
+            let stateName = menu.StartState.Name
+            let state = findState menu.States stateName
+
             {
                 Args = args
-                Session = {session with CurrentState = menu.StartState.Name}
-            }
+                Session = {session with CurrentState = state.Name}
+            }, state
         | Ongoing ->
+            let stateName = menu.StartState.Name
+            let state = findNextState menu.States stateName args.Text
+
             {
                 menu.Context with Args = args
-            }
+            }, state
         | Terminated ->
-            menu.Context
+            menu.Context, menu.StartState
 
-    match menu.States |> List.tryFind (fun state -> state.Name = context.Session.CurrentState) with
-    | None ->
-        return String.Empty
-    | Some state ->
-        let! result = runState (context, state)
-        return result.Message
+    let! result = runState (context, state)
+    return result.Message
+        
 }

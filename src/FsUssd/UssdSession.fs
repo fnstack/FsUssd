@@ -104,7 +104,7 @@ let private deleteSession sessionId = async { return sessionId |> sessionCache.R
 let private setSession (sessionId, session: UssdSession) =
     async {
         sessionId |> sessionCache.Remove
-        return sessionCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(60.))
+        return sessionCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(600.))
     }
 
 let private getSession sessionId =

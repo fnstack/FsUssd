@@ -6,18 +6,31 @@ open FsUssd
 [<EntryPoint>]
 let main argv =
 
-    let startStateRun (context: UssdContext) = async {
+    let subscriptionStateRun (context: UssdContext) = async {
 
-            return UssdResult.con "Hello"
+            return UssdResult.con (sprintf "Entrer votre nom:")
         }
 
-    let state = ussdState {
+    let subscriptionState = ussdState {
+        name "Subscription"
+        run subscriptionStateRun
+        //next ([[""]])
+    }
+
+    let startStateRun (context: UssdContext) = async {
+
+            return UssdResult.con (sprintf "1. Souscription \n2. Consultation de solde")
+        }
+
+    let startState = ussdState {
         name "Menu"
         run startStateRun
+        next (Map.empty |> Map.add "1" subscriptionState)
     }
 
     let menu = ussdMenu {
-        start_state state
+        start_state startState
+        add_state subscriptionState
     }
 
     let mutable userInput = ""
