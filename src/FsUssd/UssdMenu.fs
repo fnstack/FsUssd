@@ -2,32 +2,27 @@
 module FsUssd.UssdMenu
 
 open System
-open System.Text
 
 type UssdMenu =
     { StartState: UssdState option
       Context: UssdContext option
       States: UssdState list}
 
-let Empty = {
+let private empty = {
     StartState = None
     Context = None
     States = []
 }
 
-let setStartState state startState = { state with StartState = startState }
+let private setStartState state startState = { state with StartState = startState }
 
-let addState menuState state =
-    { menuState with
-          States = state :: menuState.States }
-
-let run (menu: UssdMenu) (args: UssdArguments) = async {
-    return String.Empty
-}
+let private addState menu state =
+    { menu with
+          States = state :: menu.States }
 
 type UssdMenuBuilder internal () =
 
-    member _.Yield(_) = Empty
+    member _.Yield(_) = empty
 
     member __.Run(state: UssdMenu) = state
 
@@ -46,3 +41,11 @@ type UssdMenuBuilder internal () =
         addState menu state
 
 let ussdMenu = UssdMenuBuilder()
+
+let private getSession = UssdSession.getSession memoryStore
+
+let run (menu: UssdMenu) (args: UssdArguments) = async {
+    let! session = getSession args.SessionId
+
+    return String.Empty
+}

@@ -1,2 +1,4 @@
 LazyCache
 FSharp.Core
+Fable.JsonConverter
+FsCodec.NewtonsoftJson

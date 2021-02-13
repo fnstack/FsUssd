@@ -5,3 +5,5 @@ framework: auto-detect
 
 nuget LazyCache
 nuget FSharp.Core
+nuget Fable.JsonConverter
+nuget FsCodec.NewtonsoftJson
