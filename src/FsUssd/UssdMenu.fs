@@ -7,7 +7,7 @@ open System.Text
 type UssdMenu =
     { StartState: UssdState option
       Context: UssdContext option
-      States: UssdState list }
+      States: UssdState list}
 
 let Empty = {
     StartState = None
@@ -21,14 +21,15 @@ let addState menuState state =
     { menuState with
           States = state :: menuState.States }
 
-let render (state: UssdMenu) =
-    state
+let run (menu: UssdMenu) (args: UssdArguments) = async {
+    return String.Empty
+}
 
 type UssdMenuBuilder internal () =
 
     member _.Yield(_) = Empty
 
-    member __.Run(state: UssdMenu) = state |> render
+    member __.Run(state: UssdMenu) = state
 
     [<CustomOperation("start_state")>]
     member _.SetStartState(menu: UssdMenu, state: UssdState) =
