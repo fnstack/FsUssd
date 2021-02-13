@@ -19,5 +19,5 @@ type UssdRequest =
     { Msisdn: string
       SessionId: string
       ServiceCode: string
-      Type: string
+      Type: UssdRequestType
       Input: string }

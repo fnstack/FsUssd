@@ -17,22 +17,22 @@ module UssdMenuItem =
           Position = pos }
 
 type UssdMenu =
-    { Header: string
-      Footer: string
+    { Header: string option
+      Footer: string option
       Separator: string
       Items: UssdMenuItem list
-      EmptyLinesBetweenHeaderAndItems: int
-      EmptyLinesBetweenFooterAndItems: int
-      ZeroItem: UssdMenuItem }
+      EmptyLinesBetweenHeaderAndItems: int option
+      EmptyLinesBetweenFooterAndItems: int option
+      ZeroItem: UssdMenuItem option }
 
 let Empty =
-    { Header = String.Empty
-      Footer = String.Empty
-      Separator = ")"
+    { Header = None
+      Footer = None
+      Separator = "."
       Items = List.Empty
-      EmptyLinesBetweenHeaderAndItems = 0
-      EmptyLinesBetweenFooterAndItems = 0
-      ZeroItem = UssdMenuItem.Empty }
+      EmptyLinesBetweenHeaderAndItems = None
+      EmptyLinesBetweenFooterAndItems = None
+      ZeroItem = None }
 
 let setHeader state header = { state with Header = header }
 
@@ -50,7 +50,7 @@ let addItem state display =
 
 let addZeroItem state display =
     let item = display |> UssdMenuItem.create 0
-    { state with ZeroItem = item }
+    { state with ZeroItem = Some item }
 
 let addItems state (items: UssdMenuItem list) =
 
@@ -68,14 +68,18 @@ let addEmptyLinesBetweenFooterAndItems state lines =
 let render (state: UssdMenu) =
     let builder = new StringBuilder()
 
-    if (state.Header |> String.IsNullOrWhiteSpace |> not) then
+    let setHeader header = header |> builder.AppendLine |> ignore
 
-        builder.AppendLine(state.Header) |> ignore
+    match state.Header, state.EmptyLinesBetweenHeaderAndItems with
+    | Some header, None ->
+        header |> setHeader
+    | Some header, Some emptyLinesBetweenHeaderAndItems when emptyLinesBetweenHeaderAndItems > 0 ->
+        header |> setHeader
 
-        if (state.EmptyLinesBetweenHeaderAndItems > 0) then
-            [ 1 .. state.EmptyLinesBetweenHeaderAndItems ]
-            |> List.iter (fun _ -> builder.AppendLine() |> ignore)
-            |> ignore
+        [ 1 .. emptyLinesBetweenHeaderAndItems ]
+        |> List.iter (fun _ -> builder.AppendLine() |> ignore)
+        |> ignore
+    | _, _ -> ()
 
     state.Items
     |> List.sortBy (fun item -> item.Position)
@@ -83,19 +87,23 @@ let render (state: UssdMenu) =
         builder.AppendLine((sprintf "%s%s %s" (item.Position.ToString()) state.Separator item.Display))
         |> ignore)
 
-    if (state.ZeroItem = UssdMenuItem.Empty |> not) then
-
-        builder.AppendLine(sprintf "0%s %s" state.Separator (state.ZeroItem.Display))
+    match state.ZeroItem, state.Footer, state.EmptyLinesBetweenFooterAndItems with
+    | Some zeroItem, None, None ->
+        builder.AppendLine(sprintf "0%s %s" state.Separator (zeroItem.Display))
         |> ignore
+    | Some zeroItem, Some footer, None ->
+        builder.AppendLine(sprintf "0%s %s" state.Separator (zeroItem.Display)) |> ignore
 
-    if (state.Footer |> String.IsNullOrWhiteSpace |> not) then
+        builder.AppendLine(footer) |> ignore
+    | Some zeroItem, Some footer, Some emptyLinesBetweenFooterAndItems when emptyLinesBetweenFooterAndItems > 0 ->
+        builder.AppendLine(sprintf "0%s %s" state.Separator (zeroItem.Display)) |> ignore
 
-        if (state.EmptyLinesBetweenFooterAndItems > 0) then
-            [ 1 .. state.EmptyLinesBetweenFooterAndItems ]
-            |> List.iter (fun _ -> builder.AppendLine() |> ignore)
-            |> ignore
-
-        builder.AppendLine(state.Footer) |> ignore
+        [ 1 .. emptyLinesBetweenFooterAndItems ]
+        |> List.iter (fun _ -> builder.AppendLine() |> ignore)
+        |> ignore
+        
+        builder.AppendLine(footer) |> ignore
+    | _, _, _ -> ()
 
     let result = builder.ToString()
     result
@@ -107,13 +115,28 @@ type UssdMenuBuilder internal () =
     member __.Run(state: UssdMenu) = state |> render
 
     [<CustomOperation("set_header")>]
-    member _.SetHeader(state, header) = setHeader state header
+    member _.SetHeader(state, header: string) =
+        match header.Trim() with
+        | header when header |> String.IsNullOrWhiteSpace ->
+            state
+        | header ->
+            setHeader state (Some header)
 
     [<CustomOperation("set_footer")>]
-    member _.SetFooter(state, footer) = setFooter state footer
+    member _.SetFooter(state, footer: string) =
+        match footer.Trim() with
+        | footer when footer |> String.IsNullOrWhiteSpace ->
+            state
+        | footer ->
+            setFooter state (Some footer)
 
     [<CustomOperation("set_separator")>]
-    member _.SetSeparator(state, separator) = setSeparator state separator
+    member _.SetSeparator(state, separator: string) =
+        match separator.Trim() with
+        | separator when separator |> String.IsNullOrWhiteSpace ->
+            state
+        | separator ->
+            setSeparator state separator
 
     [<CustomOperation("add_item")>]
     member _.AddItem(state, display) = addItem state display
