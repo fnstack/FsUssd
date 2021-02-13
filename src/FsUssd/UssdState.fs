@@ -8,16 +8,24 @@ type UssdContext = {
     Session: UssdSession
 }
 
+module UssdContext =
+    let empty = {
+       Args = UssdArguments.empty
+       Session = UssdSession.empty
+    }
+
+type UssdStateRunner = UssdContext -> Async<UssdResult>
+
 type UssdState = {
     Name: string
-    Run: UssdContext -> Async<unit>
-    Next: (string * string) list
+    Run: UssdStateRunner
+    Next: Map<string, UssdState>
 }
 
 let Empty = {
     Name = String.Empty
-    Run = fun _ -> async { return () }
-    Next = []
+    Run = fun _ -> async { return UssdResult.terminate(String.Empty) }
+    Next = Map.empty
 }
 
 type UssdStateBuilder internal () =
@@ -31,7 +39,7 @@ type UssdStateBuilder internal () =
         {state with Name = name}
 
     [<CustomOperation("run")>]
-    member _.SetRun(state: UssdState, run: UssdContext -> Async<unit>) =
+    member _.SetRun(state: UssdState, run: UssdStateRunner) =
         {state with Run = run}
 
 let ussdState = UssdStateBuilder()

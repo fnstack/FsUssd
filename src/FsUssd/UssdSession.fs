@@ -11,10 +11,45 @@ type UssdArguments = {
     Text: string
 }
 
+module UssdArguments =
+    let empty = {
+        SessionId = String.Empty
+        ServiceCode = String.Empty
+        PhoneNumber = String.Empty
+        Text = String.Empty
+    }
+
+type UssdResultType =
+    | Response
+    | Release
+
+type UssdResult = {
+    Message: string
+    Type: UssdResultType
+}
+
+module UssdResult =
+    let con message : UssdResult = {
+        Message = message
+        Type = UssdResultType.Response
+    }
+
+    let terminate message : UssdResult = {
+        Message = message
+        Type = UssdResultType.Release
+    }
+        
+type UssdSessionStatus =
+    | Initiated
+    | Ongoing
+    | Terminated
+    //| Timeout
+
 type UssdSession = {
     SessionId: string
     CurrentState: string
-    Values: Map<string, string>
+    Status: UssdSessionStatus
+    DataBag: Map<string, string>
 }
 
 type UssdSessionStore = {
@@ -28,7 +63,8 @@ module UssdSession =
     let empty = {
         SessionId = String.Empty
         CurrentState = String.Empty
-        Values = Map.empty
+        Status = UssdSessionStatus.Initiated
+        DataBag = Map.empty
     }
 
     let getSession (store: UssdSessionStore) =

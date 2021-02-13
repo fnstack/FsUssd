@@ -5,12 +5,12 @@ open System
 
 type UssdMenuState =
     { StartState: UssdState
-      Context: UssdContext option
+      Context: UssdContext
       States: UssdState list}
 
 let private empty = {
     StartState = Empty
-    Context = None
+    Context = UssdContext.empty
     States = []
 }
 
@@ -41,35 +41,44 @@ let ussdMenu = UssdMenuBuilder()
 let private getSession = UssdSession.getSession sessionStore
 let private setSession = UssdSession.setSession sessionStore
 
-let runState (context: UssdContext, state: UssdState) = async {
+let private runState (context: UssdContext, state: UssdState) : Async<UssdResult> = async {
     let session = context.Session
     
     let! result = state.Run(context)
 
+    let session =
+        match result.Type, session with
+        | Response, session ->
+            {session with Status = Ongoing}
+        | Release, session ->
+            {session with Status = Terminated}
+
     let! _ = setSession(session)
 
-    return ""
+    return result
 }
 
 let run (menu: UssdMenuState) (args: UssdArguments) = async {
     let! session = getSession args.SessionId
 
     let context : UssdContext =
-        match menu.Context with
-        | None ->
+        match session.Status with
+        | Initiated ->
             {
                 Args = args
                 Session = {session with CurrentState = menu.StartState.Name}
             }
-        | Some context ->
+        | Ongoing ->
             {
-                context with Args = args
+                menu.Context with Args = args
             }
+        | Terminated ->
+            menu.Context
 
     match menu.States |> List.tryFind (fun state -> state.Name = context.Session.CurrentState) with
     | None ->
         return String.Empty
     | Some state ->
-        let! t = runState (context, state)
-        return String.Empty
+        let! result = runState (context, state)
+        return result.Message
 }

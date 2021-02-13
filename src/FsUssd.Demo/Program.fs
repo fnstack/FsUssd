@@ -8,7 +8,7 @@ let main argv =
 
     let startStateRun (context: UssdContext) = async {
 
-            return ()
+            return UssdResult.con "Hello"
         }
 
     let state = ussdState {
