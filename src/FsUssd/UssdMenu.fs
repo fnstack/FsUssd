@@ -99,12 +99,13 @@ let run (menu: UssdMenuState) (args: UssdArguments) = async {
                 Session = {session with CurrentState = state.Name}
             }, state
         | Ongoing ->
-            let stateName = menu.StartState.Name
-            let state = findNextState menu.States stateName args.Text
+            let stateName = session.CurrentState
+            let nextState = findNextState menu.States stateName args.Text
 
             {
-                menu.Context with Args = args
-            }, state
+                Args = args
+                Session = {session with CurrentState = nextState.Name}
+            }, nextState
         | Terminated ->
             menu.Context, menu.StartState
 

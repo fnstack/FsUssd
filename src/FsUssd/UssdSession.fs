@@ -115,8 +115,7 @@ let private getSession sessionId =
             | session when session = UssdSession.empty -> return Some session
             | session -> return Some session
         with
-            | :? NullReferenceException ->
-                return None
+            | :? NullReferenceException 
             | :? ArgumentOutOfRangeException ->
                 return None
     }
