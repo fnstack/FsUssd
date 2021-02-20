@@ -69,6 +69,7 @@ module UssdSession =
 
     let getSession (store: UssdSessionStore) =
         fun sessionId -> async {
+            
             match! sessionId |> store.GetSession with
             | None ->
                 let session = { empty with SessionId = sessionId }
@@ -115,7 +116,9 @@ let private getSession sessionId =
             | session -> return Some session
         with
             | :? NullReferenceException ->
-            return None
+                return None
+            | :? ArgumentOutOfRangeException ->
+                return None
     }
 
 let private isSessionExists key =
