@@ -29,8 +29,9 @@ let main argv =
     let menu =
         ussdMenu {
             start_state mainState
-            add_state subscriptionLastNameState
-            add_state subscriptionFirstNameState
+
+            add_states [ subscriptionLastNameState
+                         subscriptionFirstNameState ]
         }
 
     let mutable userInput = ""

@@ -24,6 +24,19 @@ let private addState menu state =
     { menu with
           States = state :: menu.States }
 
+let private addStates menu states =
+    let stateNames =
+        states |> List.map (fun state -> state.Name)
+
+    { menu with
+          States =
+              states
+              @ (menu.States
+                 |> List.where
+                     (fun state ->
+                         stateNames
+                         |> List.exists (fun name -> name <> state.Name))) }
+
 let private useSessionStore menu store = { menu with SessionStore = store }
 
 type UssdMenuBuilder internal () =
@@ -48,6 +61,11 @@ type UssdMenuBuilder internal () =
     member _.AddState(menu: UssdMenuState, state: UssdState) =
 
         addState menu state
+
+    [<CustomOperation("add_states")>]
+    member _.AddStates(menu: UssdMenuState, states: UssdState list) =
+
+        addStates menu states
 
     [<CustomOperation("use_session_store")>]
     member _.UseSessionStore(menu: UssdMenuState, store: UssdSessionStore) =
