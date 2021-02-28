@@ -13,6 +13,8 @@ let main argv =
             run
                 (fun (context: UssdContext) ->
                     async {
+                        do! context.SetValue("NAME", "MOUNGUENGUE")
+
                         return
                             UssdResult.con (
                                 sprintf "1. Souscription\n2. Paiement de cotisation\n00. Retour au menu principal"

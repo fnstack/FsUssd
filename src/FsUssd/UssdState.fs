@@ -5,11 +5,15 @@ open System
 
 type UssdContext =
     { Args: UssdArguments
+      SetValue: string * string -> Async<unit>
+      GetValue: string -> Async<string option>
       Session: UssdSession }
 
 module UssdContext =
     let empty =
         { Args = UssdArguments.empty
+          SetValue = fun (_, _) -> async { return () }
+          GetValue = fun _ -> async { return None }
           Session = UssdSession.empty }
 
 type UssdStateRunner = UssdContext -> Async<UssdResult>

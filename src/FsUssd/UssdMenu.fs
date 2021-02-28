@@ -22,7 +22,10 @@ let private setStartState menu state =
 
 let private addState menu state =
     { menu with
-          States = state :: menu.States }
+          States =
+              state
+              :: (menu.States
+                  |> List.filter (fun existingState -> existingState.Name <> state.Name)) }
 
 let private addStates menu states =
     let stateNames =
@@ -32,7 +35,7 @@ let private addStates menu states =
           States =
               states
               @ (menu.States
-                 |> List.where
+                 |> List.filter
                      (fun state ->
                          stateNames
                          |> List.exists (fun name -> name <> state.Name))) }
@@ -74,8 +77,7 @@ type UssdMenuBuilder internal () =
 
 let ussdMenu = UssdMenuBuilder()
 
-//let private getSession = UssdSession.getSession sessionStore
-//let private setSession = UssdSession.setSession sessionStore
+// RUM IMPLEMENTATION
 
 let private findState (states: UssdState list) stateName =
 
@@ -96,15 +98,18 @@ let private findNextState (states: UssdState list) stateName userText =
     state
 
 let private runState (setSession: UssdSession -> Async<UssdSession>)
+                     (getSession: string -> Async<UssdSession>)
                      (context: UssdContext, state: UssdState)
                      : Async<UssdResult> =
     async {
-        let session = context.Session
+        //let session = context.Session
 
         let! result = state.Run(context)
 
+        let! newSession = getSession context.Session.SessionId
+
         let session =
-            match result.Type, session with
+            match result.Type, newSession with
             | Response, session ->
                 { session with
                       Status = Ongoing
@@ -127,16 +132,25 @@ let run (menu: UssdMenuState) (args: UssdArguments) =
 
         let! session = getSession args.SessionId
 
+        let setSessionValue =
+            UssdSession.setSessionValue sessionStore session
+
+        let getSessionValue =
+            UssdSession.getSessionValue sessionStore session
+
         let context, state: UssdContext * UssdState =
             match session.Status with
             | Initiated ->
                 let stateName = menu.StartState.Name
                 let state = findState menu.States stateName
 
-                { Args = args
-                  Session =
-                      { session with
-                            CurrentState = state.Name } },
+                { UssdContext.empty with
+                      Args = args
+                      SetValue = setSessionValue
+                      GetValue = getSessionValue
+                      Session =
+                          { session with
+                                CurrentState = state.Name } },
                 state
             | Ongoing ->
                 let stateName = session.CurrentState
@@ -144,14 +158,17 @@ let run (menu: UssdMenuState) (args: UssdArguments) =
                 let nextState =
                     findNextState menu.States stateName args.Text
 
-                { Args = args
-                  Session =
-                      { session with
-                            CurrentState = nextState.Name } },
+                { UssdContext.empty with
+                      Args = args
+                      SetValue = setSessionValue
+                      GetValue = getSessionValue
+                      Session =
+                          { session with
+                                CurrentState = nextState.Name } },
                 nextState
             | Terminated -> menu.Context, menu.StartState
 
-        let! result = runState setSession (context, state)
+        let! result = runState setSession getSession (context, state)
         return result.Message
 
     }

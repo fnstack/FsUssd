@@ -7,6 +7,10 @@ open FsUssd
 let private subscriptionLastNameStateRun (context: UssdContext) =
     async {
 
+        let! name = context.GetValue "NAME"
+
+        printfn "%A" name
+
         return UssdResult.con (sprintf "Entrer votre nom:")
     }
 

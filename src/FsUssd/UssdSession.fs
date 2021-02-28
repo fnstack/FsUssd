@@ -47,12 +47,9 @@ type UssdSession =
       DataBag: Map<string, string> }
 
 type UssdSessionStore =
-    { SetSession: string * UssdSession -> Async<unit>
-      //SetSessionValue: string * UssdSession * string -> Async<unit>
+    { SetSession: UssdSession -> Async<unit>
       GetSession: string -> Async<UssdSession option>
-      //GetSessionValue: string -> Async<string option>
       IsSessionExists: string -> Async<bool>
-      //IsSessionValueExists: string * string -> Async<bool>
       DeleteSession: string -> Async<unit> }
 
 module UssdSession =
@@ -69,7 +66,7 @@ module UssdSession =
                 | None ->
                     let session = { empty with SessionId = sessionId }
 
-                    do! store.SetSession(sessionId, session)
+                    do! store.SetSession(session)
 
                     return session
 
@@ -83,33 +80,73 @@ module UssdSession =
             async {
                 match! session.SessionId |> store.IsSessionExists with
                 | true ->
-                    do! store.SetSession(session.SessionId, session)
+                    do! store.SetSession(session)
 
                     return session
 
                 | false ->
 
                     return session
+
+            //do! store.SetSession(session)
+
+            //return session
+            }
+
+    let setSessionValue (store: UssdSessionStore) (session: UssdSession) =
+        fun (key, value) ->
+            async {
+                let dataBag =
+                    match session.DataBag.TryFind key with
+                    | None -> session.DataBag |> Map.add key value
+                    | Some _ ->
+                        session.DataBag
+                        |> Map.remove key
+                        |> Map.add key value
+
+                let session = { session with DataBag = dataBag }
+
+                do! store.SetSession(session)
+
+                return ()
+            }
+
+    let getSessionValue (store: UssdSessionStore) (session: UssdSession) =
+        fun key ->
+            async {
+                match! session.SessionId |> store.GetSession with
+                | None -> return None
+
+                | Some session ->
+
+                    let value = session.DataBag |> Map.tryFind key
+
+                    return value
             }
 
 /// CACHING
 
-let private sessionCache = CachingService()
+let private sessionMemoryCache = CachingService()
 
-let private deleteSession sessionId =
-    async { return sessionId |> sessionCache.Remove }
+let private deleteSessionInMemoryCache sessionId =
+    async { return sessionId |> sessionMemoryCache.Remove }
 
-let private setSession (sessionId, session: UssdSession) =
+let private setSessionInMemoryCache (expiresInSeconds: float) (session: UssdSession) =
     async {
-        sessionId |> sessionCache.Remove
-        return sessionCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(600.))
+        let sessionId = session.SessionId
+        sessionId |> sessionMemoryCache.Remove
+        sessionMemoryCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(expiresInSeconds))
+
+        let t = sessionMemoryCache
+
+        return ()
     }
 
-let private getSession sessionId =
+let private getSessionInMemoryCache sessionId =
     async {
         try
             match! sessionId
-                   |> sessionCache.GetAsync<UssdSession>
+                   |> sessionMemoryCache.GetAsync<UssdSession>
                    |> Async.AwaitTask with
             | session when session = UssdSession.empty -> return Some session
             | session -> return Some session
@@ -118,15 +155,15 @@ let private getSession sessionId =
         | :? ArgumentOutOfRangeException -> return None
     }
 
-let private isSessionExists key =
+let private isSessionExistsInMemoryCache sessionId =
     async {
-        match! key |> getSession with
+        match! sessionId |> getSessionInMemoryCache with
         | None -> return false
         | Some _ -> return true
     }
 
 let memorySessionStore: UssdSessionStore =
-    { SetSession = setSession
-      GetSession = getSession
-      IsSessionExists = isSessionExists
-      DeleteSession = deleteSession }
+    { SetSession = setSessionInMemoryCache (600.)
+      GetSession = getSessionInMemoryCache
+      IsSessionExists = isSessionExistsInMemoryCache
+      DeleteSession = deleteSessionInMemoryCache }
