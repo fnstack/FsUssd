@@ -6,19 +6,25 @@ open System
 type UssdMenuState =
     { StartState: UssdState
       Context: UssdContext
-      States: UssdState list}
+      SessionStore: UssdSessionStore
+      States: UssdState list }
 
-let private empty = {
-    StartState = UssdState.empty
-    Context = UssdContext.empty
-    States = []
-}
+let private empty =
+    { StartState = UssdState.empty
+      Context = UssdContext.empty
+      SessionStore = memorySessionStore
+      States = [] }
 
-let private setStartState menu state = { menu with StartState = state; States = state :: menu.States }
+let private setStartState menu state =
+    { menu with
+          StartState = state
+          States = state :: menu.States }
 
 let private addState menu state =
     { menu with
           States = state :: menu.States }
+
+let private useSessionStore menu store = { menu with SessionStore = store }
 
 type UssdMenuBuilder internal () =
 
@@ -43,73 +49,91 @@ type UssdMenuBuilder internal () =
 
         addState menu state
 
+    [<CustomOperation("use_session_store")>]
+    member _.UseSessionStore(menu: UssdMenuState, store: UssdSessionStore) =
+
+        useSessionStore menu store
+
 let ussdMenu = UssdMenuBuilder()
 
-let private getSession = UssdSession.getSession sessionStore
-let private setSession = UssdSession.setSession sessionStore
+//let private getSession = UssdSession.getSession sessionStore
+//let private setSession = UssdSession.setSession sessionStore
 
-let findState (states: UssdState list) stateName =
-    
-    match states |> List.tryFind (fun state -> state.Name = stateName) with
-    | None ->
-        states.[1]
-    | Some state ->
-        state
+let private findState (states: UssdState list) stateName =
 
-let findNextState (states: UssdState list) stateName userText =
-    
+    match states
+          |> List.tryFind (fun state -> state.Name = stateName) with
+    | None -> states.[1]
+    | Some state -> state
+
+let private findNextState (states: UssdState list) stateName userText =
+
     let state = findState states stateName
 
-    let state = match state.Next.TryFind(userText) with
-                | None ->
-                    state
-                | Some state ->
-                    state
+    let state =
+        match state.Next.TryFind(userText) with
+        | None -> state
+        | Some state -> state
 
     state
 
-let private runState (context: UssdContext, state: UssdState) : Async<UssdResult> = async {
-    let session = context.Session
-    
-    let! result = state.Run(context)
+let private runState (setSession: UssdSession -> Async<UssdSession>)
+                     (context: UssdContext, state: UssdState)
+                     : Async<UssdResult> =
+    async {
+        let session = context.Session
 
-    let session =
-        match result.Type, session with
-        | Response, session ->
-            {session with Status = Ongoing; CurrentState = state.Name}
-        | Release, session ->
-            {session with Status = Terminated; CurrentState = state.Name}
+        let! result = state.Run(context)
 
-    let! _ = setSession(session)
+        let session =
+            match result.Type, session with
+            | Response, session ->
+                { session with
+                      Status = Ongoing
+                      CurrentState = state.Name }
+            | Release, session ->
+                { session with
+                      Status = Terminated
+                      CurrentState = state.Name }
 
-    return result
-}
+        let! _ = setSession (session)
 
-let run (menu: UssdMenuState) (args: UssdArguments) = async {
-    let! session = getSession args.SessionId
+        return result
+    }
 
-    let context, state : UssdContext * UssdState =
-        match session.Status with
-        | Initiated ->
-            let stateName = menu.StartState.Name
-            let state = findState menu.States stateName
+let run (menu: UssdMenuState) (args: UssdArguments) =
+    async {
+        let sessionStore = menu.SessionStore
+        let getSession = UssdSession.getSession sessionStore
+        let setSession = UssdSession.setSession sessionStore
 
-            {
-                Args = args
-                Session = {session with CurrentState = state.Name}
-            }, state
-        | Ongoing ->
-            let stateName = session.CurrentState
-            let nextState = findNextState menu.States stateName args.Text
+        let! session = getSession args.SessionId
 
-            {
-                Args = args
-                Session = {session with CurrentState = nextState.Name}
-            }, nextState
-        | Terminated ->
-            menu.Context, menu.StartState
+        let context, state: UssdContext * UssdState =
+            match session.Status with
+            | Initiated ->
+                let stateName = menu.StartState.Name
+                let state = findState menu.States stateName
 
-    let! result = runState (context, state)
-    return result.Message
-        
-}
+                { Args = args
+                  Session =
+                      { session with
+                            CurrentState = state.Name } },
+                state
+            | Ongoing ->
+                let stateName = session.CurrentState
+
+                let nextState =
+                    findNextState menu.States stateName args.Text
+
+                { Args = args
+                  Session =
+                      { session with
+                            CurrentState = nextState.Name } },
+                nextState
+            | Terminated -> menu.Context, menu.StartState
+
+        let! result = runState setSession (context, state)
+        return result.Message
+
+    }

@@ -101,7 +101,7 @@ open System.Text
 //        [ 1 .. emptyLinesBetweenFooterAndItems ]
 //        |> List.iter (fun _ -> builder.AppendLine() |> ignore)
 //        |> ignore
-        
+
 //        builder.AppendLine(footer) |> ignore
 //    | _, _, _ -> ()
 
