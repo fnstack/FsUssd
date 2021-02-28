@@ -97,13 +97,10 @@ let private findNextState (states: UssdState list) stateName userText =
 
     state
 
-let private runState (setSession: UssdSession -> Async<UssdSession>)
-                     (getSession: string -> Async<UssdSession>)
+let private runState (getSession: string -> Async<UssdSession>)
                      (context: UssdContext, state: UssdState)
-                     : Async<UssdResult> =
+                     : Async<UssdResult * UssdSession> =
     async {
-        //let session = context.Session
-
         let! result = state.Run(context)
 
         let! newSession = getSession context.Session.SessionId
@@ -119,9 +116,9 @@ let private runState (setSession: UssdSession -> Async<UssdSession>)
                       Status = Terminated
                       CurrentState = state.Name }
 
-        let! _ = setSession (session)
+        //let! _ = setSession (session)
 
-        return result
+        return result, session
     }
 
 let run (menu: UssdMenuState) (args: UssdArguments) =
@@ -168,7 +165,9 @@ let run (menu: UssdMenuState) (args: UssdArguments) =
                 nextState
             | Terminated -> menu.Context, menu.StartState
 
-        let! result = runState setSession getSession (context, state)
+        let! result, session = runState getSession (context, state)
+
+        let! _ = setSession (session)
         return result.Message
 
     }
