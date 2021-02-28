@@ -78,19 +78,19 @@ module UssdSession =
     let setSession (store: UssdSessionStore) =
         fun (session: UssdSession) ->
             async {
-                match! session.SessionId |> store.IsSessionExists with
-                | true ->
-                    do! store.SetSession(session)
+                //match! session.SessionId |> store.IsSessionExists with
+                //| true ->
+                //    do! store.SetSession(session)
 
-                    return session
+                //    return session
 
-                | false ->
+                //| false ->
 
-                    return session
+                //    return session
 
-            //do! store.SetSession(session)
+                do! store.SetSession(session)
 
-            //return session
+                return session
             }
 
     let setSessionValue (store: UssdSessionStore) (session: UssdSession) =
@@ -136,8 +136,6 @@ let private setSessionInMemoryCache (expiresInSeconds: float) (session: UssdSess
         let sessionId = session.SessionId
         sessionId |> sessionMemoryCache.Remove
         sessionMemoryCache.Add<UssdSession>(sessionId, session, TimeSpan.FromSeconds(expiresInSeconds))
-
-        let t = sessionMemoryCache
 
         return ()
     }
