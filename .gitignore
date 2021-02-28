@@ -329,3 +329,4 @@ output/
 # dotenv environment variables file
 .env
 .paket/.store/
+.ionide/

@@ -23,5 +23,5 @@ let subscriptionFirstNameState = ussdState {
 let subscriptionLastNameState = ussdState {
     name "Subscription.LastName"
     run subscriptionLastNameStateRun
-    next (Map.empty.Add ("john", subscriptionFirstNameState))
+    next (Map.empty |> Map.add "john" subscriptionFirstNameState)
 }

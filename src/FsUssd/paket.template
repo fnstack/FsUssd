@@ -1,0 +1,19 @@
+type project
+title
+    FsUssd
+owners
+    fnstack
+authors
+    fnstack
+projectUrl
+    https://github.com/fnstack/FsUssd
+requireLicenseAcceptance
+    false
+copyright
+    Copyright 2020-2021
+tags
+    fsharp ussd
+summary
+    FsUssd is a utility library to help write app to USSD journey.
+description
+    FsUssd is a utility library to help write app to USSD journey.

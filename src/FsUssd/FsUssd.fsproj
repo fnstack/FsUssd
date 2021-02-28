@@ -13,6 +13,7 @@
     <Compile Include="UssdState.fs" />
     <Compile Include="UssdMenu.fs" />
     <None Include="paket.references" />
+    <None Include="paket.template" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

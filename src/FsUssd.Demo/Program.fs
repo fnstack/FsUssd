@@ -8,13 +8,15 @@ let main argv =
 
     let startStateRun (context: UssdContext) = async {
 
-            return UssdResult.con (sprintf "1. Souscription \n2. Consultation de solde")
+            return UssdResult.con (sprintf "1. Souscription\n2. Paiement de cotisation\n00. Retour au menu principal")
         }
 
     let startState = ussdState {
         name "Menu"
         run startStateRun
-        next (Map.empty |> Map.add "1" subscriptionLastNameState)
+        next (Map.empty
+                |> Map.add "1" subscriptionLastNameState
+                |> Map.add "2" subscriptionLastNameState)
     }
 
     let menu = ussdMenu {
