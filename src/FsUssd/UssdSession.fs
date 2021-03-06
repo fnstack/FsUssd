@@ -93,6 +93,15 @@ module UssdSession =
                 return session
             }
 
+    let removeSession (store: UssdSessionStore) =
+        fun (session: UssdSession) ->
+            async {
+
+                do! store.DeleteSession(session.SessionId)
+
+                return session
+            }
+
     let setSessionValue (store: UssdSessionStore) (session: UssdSession) =
         fun (key, value) ->
             async {

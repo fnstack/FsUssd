@@ -24,7 +24,7 @@ let main argv =
             next (
                 Map.empty
                 |> Map.add "1" subscriptionLastNameState
-                |> Map.add "2" subscriptionLastNameState
+                |> Map.add "(http:\/\/\S+)" regexState
             )
         }
 
@@ -33,6 +33,7 @@ let main argv =
             start_state mainState
 
             add_states [ subscriptionLastNameState
+                         regexState
                          subscriptionFirstNameState ]
         }
 

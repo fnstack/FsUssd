@@ -37,3 +37,9 @@ let subscriptionLastNameState =
             |> Map.add "john" subscriptionFirstNameState
         )
     }
+
+let regexState =
+    ussdState {
+        name "Subscription.Regex"
+        run (fun _ -> async { return UssdResult.terminate (sprintf "REGEX") })
+    }

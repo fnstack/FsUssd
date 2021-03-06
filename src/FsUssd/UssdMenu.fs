@@ -2,6 +2,7 @@
 module FsUssd.UssdMenu
 
 open System
+open System.Text.RegularExpressions
 
 type UssdMenuState =
     { StartState: UssdState
@@ -91,9 +92,18 @@ let private findNextState (states: UssdState list) stateName userText =
     let state = findState states stateName
 
     let state =
-        match state.Next.TryFind(userText) with
-        | None -> state
-        | Some state -> state
+        match state.Next with
+        | next when next |> Map.isEmpty -> state
+        | next when next.ContainsKey(userText) ->
+            match next.TryGetValue userText with
+            | true, state -> state
+            | false, _ -> state
+        | next ->
+            match next
+                  |> Map.toList
+                  |> List.tryFind (fun (key, _) -> Regex.IsMatch(userText, key)) with
+            | None -> state
+            | Some (_, state) -> state
 
     state
 
@@ -116,8 +126,6 @@ let private runState (getSession: string -> Async<UssdSession>)
                       Status = Terminated
                       CurrentState = state.Name }
 
-        //let! _ = setSession (session)
-
         return result, session
     }
 
@@ -126,6 +134,7 @@ let run (menu: UssdMenuState) (args: UssdArguments) =
         let sessionStore = menu.SessionStore
         let getSession = UssdSession.getSession sessionStore
         let setSession = UssdSession.setSession sessionStore
+        let removeSession = UssdSession.removeSession sessionStore
 
         let! session = getSession args.SessionId
 
@@ -167,7 +176,15 @@ let run (menu: UssdMenuState) (args: UssdArguments) =
 
         let! result, session = runState getSession (context, state)
 
-        let! _ = setSession (session)
+        match session with
+        | session when session.Status = UssdSessionStatus.Ongoing ->
+            let! _ = setSession (session)
+            ()
+        | session when session.Status = UssdSessionStatus.Terminated ->
+            let! _ = removeSession (session)
+            ()
+        | _ -> ()
+
         return result.Message
 
     }
