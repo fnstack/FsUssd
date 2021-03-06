@@ -4,11 +4,6 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="USSD\UssdRequest.fs" />
-    <Compile Include="USSD\UssdResponse.fs" />
-    <Compile Include="USSD\UssdForm.fs" />
-    <Compile Include="USSD\UssdContext.fs" />
-    <Compile Include="USSD\UssdMenu.fs" />
     <Compile Include="UssdSession.fs" />
     <Compile Include="UssdState.fs" />
     <Compile Include="UssdMenu.fs" />
