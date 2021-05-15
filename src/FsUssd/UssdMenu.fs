@@ -259,14 +259,14 @@ let private findNextState (states: UssdState list) stateName userText =
         | next when next |> Map.isEmpty -> state
         | next when next.ContainsKey(userText) ->
             match next.TryGetValue userText with
-            | true, state -> state
+            | true, state -> findState states state
             | false, _ -> state
         | next ->
             match next
                   |> Map.toList
                   |> List.tryFind (fun (key, _) -> Regex.IsMatch(userText, key)) with
             | None -> state
-            | Some (_, state) -> state
+            | Some (_, state) -> findState states state
 
     state
 

@@ -21,11 +21,8 @@ let main argv =
                             )
                     })
 
-            next (
-                Map.empty
-                |> Map.add "1" subscriptionLastNameState
-                |> Map.add "(http:\/\/\S+)" regexState
-            )
+            add_next_entry "1" "Subscription.LastName"
+            add_next_entry "(http:\/\/\S+)" "Subscription.Regex"
         }
 
     let menu =

@@ -32,10 +32,7 @@ let subscriptionLastNameState =
         name "Subscription.LastName"
         run subscriptionLastNameStateRun
 
-        next (
-            Map.empty
-            |> Map.add "john" subscriptionFirstNameState
-        )
+        add_next_entry "john" "Subscription.FirstName"
     }
 
 let regexState =

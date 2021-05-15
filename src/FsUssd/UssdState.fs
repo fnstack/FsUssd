@@ -29,7 +29,7 @@ type UssdStateRunner = UssdContext -> Async<UssdResult>
 type UssdState =
     { Name: string
       Run: UssdStateRunner
-      Next: Map<string, UssdState> }
+      Next: Map<string, string> }
 
 let empty =
     { Name = String.Empty
@@ -49,6 +49,12 @@ type UssdStateBuilder internal () =
     member _.SetRun(state: UssdState, run: UssdStateRunner) = { state with Run = run }
 
     [<CustomOperation("next")>]
-    member _.SetNext(state: UssdState, next: Map<string, UssdState>) = { state with Next = next }
+    member _.SetNext(state: UssdState, next: Map<string, string>) = { state with Next = next }
+
+    [<CustomOperation("add_next_entry")>]
+    member _.SetAddNextEntry(state: UssdState, key: string, value: string) =
+        let next = state.Next |> Map.add key value
+
+        { state with Next = next }
 
 let ussdState = UssdStateBuilder()
